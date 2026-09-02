@@ -6,6 +6,7 @@ import { isProduction, env } from '@/lib/env';
 const NAV = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/prospects', label: 'Prospects', end: false },
+  { to: '/follow-ups', label: 'Follow-ups', end: false },
   { to: '/leaderboard', label: 'Leaderboard', end: false },
 ];
 

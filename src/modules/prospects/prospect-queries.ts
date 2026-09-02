@@ -40,6 +40,9 @@ export function useProspectMutations(id?: string) {
   const qc = useQueryClient();
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: keys.all });
+    void qc.invalidateQueries({ queryKey: ['followups'] });
+    void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    void qc.invalidateQueries({ queryKey: ['analytics'] });
     if (id) {
       void qc.invalidateQueries({ queryKey: keys.detail(id) });
       void qc.invalidateQueries({ queryKey: keys.activities(id) });

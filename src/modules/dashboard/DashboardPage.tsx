@@ -10,6 +10,7 @@ import {
 import { FUNNEL_STAGES, PIPELINE_STATUS_LABEL } from '@/constants/pipeline';
 import { Currency } from '@/components/Currency';
 import { FunnelPanel } from '@/modules/analytics/FunnelPanel';
+import { FollowUpsPanel } from '@/modules/followups/FollowUpsPanel';
 import { useAuth } from '@/modules/auth/use-auth';
 import { startOfDayInTimeZone } from '@/lib/time';
 
@@ -80,6 +81,8 @@ export function DashboardPage() {
               <Stat label="New paying merchants" value={metrics.today.merchantsConverted} />
             </div>
           </div>
+
+          <FollowUpsPanel showOwner={isAdmin} />
 
           <FunnelPanel scopeLabel={isAdmin ? 'All salespeople' : 'My prospects'} />
 
