@@ -7,8 +7,9 @@ import { PIPELINE_STATUSES, PIPELINE_STATUS_LABEL } from '@/constants/pipeline';
 import { PROSPECT_SOURCES, PROSPECT_SOURCE_LABEL } from '@/constants/sources';
 import { BUSINESS_CATEGORIES, BUSINESS_CATEGORY_LABEL } from '@/constants/categories';
 import { StampBadge } from '@/components/StampBadge';
+import { ExportProspectsButton } from '@/modules/export/ExportProspectsButton';
 import { useAuth } from '@/modules/auth/use-auth';
-import { canViewAllProspects } from '@/modules/authorization/permissions';
+import { canExportData, canViewAllProspects } from '@/modules/authorization/permissions';
 import { formatDate, relativeDay } from '@/lib/format';
 
 export function ProspectListPage() {
@@ -17,6 +18,7 @@ export function ProspectListPage() {
   const [searchInput, setSearchInput] = useState('');
   const { data: prospects, isLoading, error } = useProspects(filters);
   const adminView = actor ? canViewAllProspects(actor) : false;
+  const mayExport = actor ? canExportData(actor) : false;
   const { data: staff } = useStaffList();
 
   const set = (patch: Partial<ProspectFilters>) => setFilters((f) => ({ ...f, ...patch }));
@@ -27,7 +29,10 @@ export function ProspectListPage() {
     <div className="content">
       <div className="page-head">
         <h1>Prospects</h1>
-        <Link className="btn primary" to="/prospects/new">+ New prospect</Link>
+        <span className="row" style={{ gap: 8 }}>
+          {mayExport && <ExportProspectsButton filters={filters} />}
+          <Link className="btn primary" to="/prospects/new">+ New prospect</Link>
+        </span>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
