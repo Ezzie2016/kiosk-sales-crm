@@ -44,8 +44,11 @@ browser-UI, run repeatedly and rerun-safe).
 > per run, which is pinned by an undeletable payment (spec §10). Those are
 > tagged `QA-<run> pay`; clean them with:
 > ```sql
+> delete from crm.staff     where email like 'qa-%@example.test';
+> delete from auth.users    where email like 'qa-%@example.test';
 > delete from crm.payments  where prospect_id in (select id from crm.prospects where business_name not like 'Dev Store %');
 > delete from crm.prospects where business_name not like 'Dev Store %';
+> update crm.staff set is_active = false where email = 'chidi@example.test';
 > ```
 
 ---
@@ -58,7 +61,7 @@ browser-UI, run repeatedly and rerun-safe).
 npm run test:integration
 ```
 
-`test:integration` runs four files:
+`test:integration` runs eight files:
 
 - **`phase1.integration.test.ts`** (41) — five anon auth sessions (admin / sales
   A / sales B / no-staff / deactivated): lockouts, prospect ownership, assignment
@@ -72,16 +75,28 @@ npm run test:integration
   returns the aggregate to any active staff member (not just admins) and ranks
   Amaka ahead of David; anon / no-staff get nothing; the funnel is monotonic,
   matches the seed (60 total / 6 paid), and is RLS-scoped per rep.
-- **`phase2-payments.integration.test.ts`** (4) — Phase 2: a salesperson cannot
-  record or re-status a payment; an admin records one (kobo-correct, `NGN`,
-  attribution defaulted) which writes a `payment_received` activity +
-  `payment.created` audit; moving it `pending → confirmed` is audited and flows
-  into the attributed rep's leaderboard revenue.
+- **`phase2-payments.integration.test.ts`** (4) — a salesperson cannot record or
+  re-status a payment; an admin records one (kobo-correct, `NGN`, attribution
+  defaulted) → `payment_received` activity + `payment.created` audit; moving it
+  `pending → confirmed` is audited and flows into the rep's leaderboard revenue.
+- **`phase2-followups.integration.test.ts`** (4) — drives one prospect's
+  follow-up date through overdue / upcoming / today and asserts the live bucket
+  (Africa/Lagos); a rep's follow-ups are an RLS-scoped subset.
+- **`phase2-export.integration.test.ts`** (3) — an admin exports all 60 seed
+  prospects (one CSV row each, §21 header); paid prospects export `Confirmed`
+  + revenue > 0; a rep's export is RLS-scoped.
+- **`phase2-audit.integration.test.ts`** (4) — an admin sees entries newest-first;
+  the action filter works; `actions()` is distinct+sorted; a rep gets nothing.
+- **`phase2-staff.integration.test.ts`** (6) — `staff_overview` (admin: all rows
+  + counts; rep: nothing); reactivate → deactivate round-trip is stamped +
+  audited; a rep can't flip anyone's active flag; the `crm-admin` edge function
+  refuses a non-admin (403) and a malformed admin request (400) without
+  creating anything. **Manual:** actually create a salesperson and confirm they
+  can log in.
 
-**Run status: ✅ PASS — 65/65, run ×2 rerun-safe (2026-09-02).** Getting Phase 1
-green surfaced and fixed three `crm`-schema bugs — see §12.
+**Run status: ✅ PASS — 82/82, run ×2 rerun-safe (2026-09-02).**
 
-- [x] `npm run test:integration` passes with **0 failures** (65/65).
+- [x] `npm run test:integration` passes with **0 failures** (82/82).
 - [x] Re-run — green. The `phase1-ui` harness now caches one password grant per
       account and switches with `setSession()`; the integration config uses
       `retry: 1`. Together those keep the four-file suite from tripping

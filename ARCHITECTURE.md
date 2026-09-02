@@ -1,10 +1,11 @@
 # Kiosk Sales CRM — Architecture (foundation build)
 
-Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 in progress.** Shipped:
-funnel metrics + leaderboard (2026-09-02, migration `0005`); payments management
-(2026-09-02, no migration — uses the existing `crm.payments` RLS). Remaining
-Phase 2: commissions, CSV export, follow-up reminders, admin
-salesperson-management.
+Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 essentially complete (2026-09-02).**
+Shipped: funnel metrics + leaderboard (`0005`), payments management, follow-up
+reminder dashboard, prospect CSV export, audit-log viewer, admin
+salesperson-management (`0006`/`0007` + the `crm-admin` edge function).
+**Not built by design:** commissions / commission payouts — spec §25 lists these
+as a *future integration*, to be structured for but not implemented in V1.
 
 Verification (2026-08-30):
 - ✅ Applied to **kiosk-nonprod** (`porjrpfvdadancwyeeix`): `0001_crm_foundation`,
@@ -188,14 +189,16 @@ business rules in components.
 | **Funnel conversion metrics** (spec §9) | ✅ Phase 2 — `src/modules/analytics/funnel-metrics.ts`, on the dashboard, RLS-scoped |
 | **Salesperson leaderboard** (spec §8) | ✅ Phase 2 — `crm.leaderboard()` RPC + `src/modules/analytics/leaderboard.ts`, `/leaderboard` |
 | **Payments management** (spec §10) | ✅ Phase 2 — `src/modules/payments/*`; admin records/updates payments on the prospect detail page |
+| **Follow-up reminder dashboard** (spec §6) | ✅ Phase 2 — `src/modules/followups/*`; Overdue / Due today / Upcoming on the dashboard + `/follow-ups` |
+| **Prospect CSV export** (spec §21) | ✅ Phase 2 — `src/modules/export/*`; admin-only, honours the list filters, RFC-4180 |
+| **Audit-log viewer** (spec §16) | ✅ Phase 2 — `src/modules/audit/*` at `/admin/audit` (admin only) |
+| **Admin salesperson-management** (spec §15) | ✅ Phase 2 — `src/modules/staff/*` at `/admin/staff`; list + counts + activate/deactivate; create via the `crm-admin` edge function |
 | Search + filters (status/source/category/salesperson/text) | ✅ |
 | Dev seed (~60 prospects, 5 accounts, activities, payments, follow-ups) | ✅ run on `kiosk-nonprod` |
 | Mobile-responsive layout | ✅ (sidebar → top nav, tables → cards) |
-| Tests | ✅ 113 unit + 65 integration (RLS/auth/dup + browser-UI + analytics + payments) |
+| Tests | ✅ 139 unit + 82 integration (8 harness files) |
 
-**Still not built** (later Phase 2/3): commissions, CSV export, follow-up
-reminder dashboard (due/overdue/upcoming), admin salesperson-management UI,
-audit-log viewer UI.
+**Not built:** commissions / commission payouts — spec §25 future integration.
 
 ### 8a. Analytics (Phase 2)
 
@@ -233,6 +236,40 @@ detail page.
 - Recording a payment does **not** move the pipeline status — payment tracking
   and the funnel stage are deliberately decoupled (spec §2 vs §10); the form
   says so. `confirmed` payments flow into the funnel/leaderboard revenue.
+
+### 8c. Follow-ups / CSV / audit (Phase 2)
+
+- **Follow-ups** (`followup-buckets.ts`, pure + 6 tests): Overdue / Due today /
+  Upcoming on the Africa/Lagos day boundary; terminal (paid/lost) prospects are
+  dropped. RLS-scoped; the admin view shows the owner.
+- **CSV export** (`prospect-csv.ts`, pure + 9 tests): the exact spec §21
+  16-column layout, RFC-4180 quoting, "Trial status" from `trial_started_at`,
+  "Payment status" (Confirmed wins), "Revenue" = confirmed kobo → naira.
+  `export-repository` honours the prospect-list filters; download is built
+  client-side with a UTF-8 BOM. Button is admin-only.
+- **Audit-log viewer** (`audit-format.ts`, pure + 6 tests): `/admin/audit`,
+  admin only. `summarizeChange` turns the trigger-written `old_value`/`new_value`
+  jsonb into `field: old → new` lines; the `crm.audit_log` `select` policy is
+  `is_admin()` and there is no write policy.
+
+### 8d. Admin salesperson-management (Phase 2, spec §15)
+
+`src/modules/staff/*` at `/admin/staff` (under `<RequireAdmin>`).
+
+- **`crm.staff_overview()`** (`0006`, `SECURITY DEFINER`, `is_admin()` guard):
+  every staff row + assigned / active-prospect / paying / revenue counts.
+- **Activate / deactivate**: a plain admin `UPDATE` on `crm.staff` (the
+  `staff_update` policy allows it); the `stamp_staff_deactivation` +
+  `on_staff_update` triggers set `deactivated_at` and write the audit row.
+  Deactivating a rep with active prospects prompts a confirm ("reassign first";
+  spec §15 keeps all history).
+- **Create a salesperson**: the browser (anon key) can't create an `auth.users`
+  row, so the **`crm-admin` edge function** (`supabase/functions/crm-admin`)
+  does it with the service role — but only after `admin.auth.getUser(token)` +
+  a `crm.staff` role check confirm the caller is an active admin. `0007` grants
+  `service_role` access to the `crm` schema (a `CREATE SCHEMA` doesn't).
+  `verify_jwt` is on. Client reads the JSON error off `error.context` for
+  non-2xx responses.
 
 ## 9. Known limitations / decisions to confirm
 

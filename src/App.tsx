@@ -12,6 +12,7 @@ import { ProspectEditPage } from '@/modules/prospects/ProspectEditPage';
 import { LeaderboardPage } from '@/modules/analytics/LeaderboardPage';
 import { FollowUpsPage } from '@/modules/followups/FollowUpsPage';
 import { AuditLogPage } from '@/modules/audit/AuditLogPage';
+import { StaffAdminPage } from '@/modules/staff/StaffAdminPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -29,6 +30,7 @@ function Protected() {
           <Route path="/prospects/:id/edit" element={<ProspectEditPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/follow-ups" element={<FollowUpsPage />} />
+          <Route path="/admin/staff" element={<RequireAdmin><StaffAdminPage /></RequireAdmin>} />
           <Route path="/admin/audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

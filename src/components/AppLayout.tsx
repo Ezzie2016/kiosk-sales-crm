@@ -9,7 +9,10 @@ const BASE_NAV = [
   { to: '/follow-ups', label: 'Follow-ups', end: false },
   { to: '/leaderboard', label: 'Leaderboard', end: false },
 ];
-const ADMIN_NAV = [{ to: '/admin/audit', label: 'Audit', end: false }];
+const ADMIN_NAV = [
+  { to: '/admin/staff', label: 'Staff', end: false },
+  { to: '/admin/audit', label: 'Audit', end: false },
+];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { staff, signOut } = useAuth();
