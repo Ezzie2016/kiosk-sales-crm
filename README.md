@@ -1,7 +1,8 @@
 # Kiosk Sales CRM
 
-Internal sales CRM for Kiosk, tracks prospects from first outreach to paying
-merchant, assigns ownership to salespeople, and prevents duplicate outreach.
+Internal sales CRM for Kiosk. Tracks prospects from first outreach to paying
+merchant, manages follow-ups and sales activity, records payments, provides team
+performance visibility, and prevents duplicate outreach.
 
 Separate application from the Kiosk merchant mobile app. See
 [`ARCHITECTURE.md`](ARCHITECTURE.md) for the design and the current review gate.
@@ -30,12 +31,12 @@ cp .env.example .env      # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 
 ## Backend
 
-The schema is **not applied automatically.** After review:
+The `crm` schema is applied through the migrations in
+[`supabase/migrations/`](supabase/migrations/). They are **not applied
+automatically** — apply them in order after review (via Supabase CLI, MCP, or the
+SQL editor), then load the dev seed:
 
 ```bash
-# apply to kiosk-nonprod (via Supabase CLI, MCP, or the SQL editor)
-supabase db execute -f supabase/migrations/0001_crm_foundation.sql
-
 # dev data (local stack or nonprod ONLY — creates @example.test accounts)
 supabase db execute -f supabase/seed/dev_seed.sql
 ```
