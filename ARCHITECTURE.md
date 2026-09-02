@@ -1,6 +1,6 @@
 # Kiosk Sales CRM — Architecture (foundation build)
 
-Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 essentially complete (2026-09-02).**
+Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 complete + polish pass done (2026-09-02).**
 Shipped: funnel metrics + leaderboard (`0005`), payments management, follow-up
 reminder dashboard, prospect CSV export, audit-log viewer, admin
 salesperson-management (`0006`/`0007` + the `crm-admin` edge function).
@@ -270,6 +270,18 @@ detail page.
   `service_role` access to the `crm` schema (a `CREATE SCHEMA` doesn't).
   `verify_jwt` is on. Client reads the JSON error off `error.context` for
   non-2xx responses.
+
+### 8e. Polish pass (2026-09-02)
+
+- **Top-level `ErrorBoundary`** (`src/components/ErrorBoundary.tsx`, wraps the
+  whole tree in `App.tsx`): a render-time crash shows the error message + a
+  Reload button instead of a blank screen (spec §29 — do not hide errors).
+  Route-level *data* errors are still handled by each page's own `error` state;
+  this is the last resort for the unexpected.
+- Production-cleanup grep of `src/` is clean: no `console.*` in app code (only
+  `ErrorBoundary.componentDidCatch`, deliberately), no `TODO`/`FIXME`, no
+  `eslint-disable`, no placeholder buttons. `get_advisors` security = 0 findings
+  on `crm.*`.
 
 ## 9. Known limitations / decisions to confirm
 

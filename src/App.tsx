@@ -4,6 +4,7 @@ import { AuthProvider } from '@/modules/auth/auth-context';
 import { RequireAdmin, RequireStaff } from '@/modules/auth/guards';
 import { LoginPage } from '@/modules/auth/LoginPage';
 import { AppLayout } from '@/components/AppLayout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DashboardPage } from '@/modules/dashboard/DashboardPage';
 import { ProspectListPage } from '@/modules/prospects/ProspectListPage';
 import { ProspectCreatePage } from '@/modules/prospects/ProspectCreatePage';
@@ -41,15 +42,17 @@ function Protected() {
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/*" element={<Protected />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/*" element={<Protected />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

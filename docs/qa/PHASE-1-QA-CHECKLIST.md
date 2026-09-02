@@ -331,7 +331,8 @@ create/edit/status flows all work through the real `<form onSubmit>`.
 | RLS / auth / duplicate harness (`npm run test:integration`) | Claude Code | 2026-08-30 | **PASS — 41/41, run ×3, rerun-safe** |
 | Browser walkthrough — headless (`phase1-ui.integration.test.ts`) | Claude Code | 2026-08-30 | **PASS — 15/15** |
 | Browser dev-server boot smoke | Claude Code | 2026-08-30 | **PASS** |
-| Unit tests / typecheck / lint / build | Claude Code | 2026-08-30 | **PASS — 78 unit tests** |
+| Unit tests / typecheck / lint / build | Claude Code | 2026-09-02 | **PASS — 139 unit tests, eslint 0/0, build green** |
+| Full validation after Phase 2 + polish pass | Claude Code | 2026-09-02 | **PASS — 139 unit + 82 integration (8 harness files), rerun-safe** |
 | Bugs found | see §12 (3 schema fixes, all re-verified) | 2026-08-30 | |
 | Mobile visual (one-time human glance, §11 last item) | | | pending — non-blocking |
 
