@@ -1,6 +1,6 @@
 # Kiosk Sales CRM
 
-Internal sales CRM for Kiosk — tracks prospects from first outreach to paying
+Internal sales CRM for Kiosk, tracks prospects from first outreach to paying
 merchant, assigns ownership to salespeople, and prevents duplicate outreach.
 
 Separate application from the Kiosk merchant mobile app. See
