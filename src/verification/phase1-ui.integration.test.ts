@@ -112,9 +112,40 @@ function renderApp(path: string) {
   );
 }
 
+/**
+ * Cache one real password sign-in per account (in beforeAll), then switch the
+ * app's Supabase client between tests with setSession() — a local operation.
+ * This keeps the whole file to five GoTrue password grants instead of ~15, so
+ * running the full `test:integration` suite back-to-back doesn't trip nonprod
+ * rate limits.
+ */
+const sessionCache = new Map<string, { access_token: string; refresh_token: string }>();
+
+async function primeSession(email: string): Promise<void> {
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.signInWithPassword({ email, password: PASSWORD });
+  if (error || !data.session) throw new Error(`sign-in failed for ${email}: ${error?.message ?? 'no session'} — run dev_seed.sql first`);
+  sessionCache.set(email, {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+}
+
 async function signInAs(email: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithPassword({ email, password: PASSWORD });
-  if (error) throw new Error(`sign-in failed for ${email}: ${error.message} — run dev_seed.sql first`);
+  let cached = sessionCache.get(email);
+  if (!cached) {
+    await primeSession(email);
+    cached = sessionCache.get(email)!;
+  }
+  const { error } = await supabase.auth.setSession(cached);
+  if (error) {
+    // token may have gone stale mid-run — fall back to a fresh grant
+    await primeSession(email);
+    const { error: retryError } = await supabase.auth.setSession(sessionCache.get(email)!);
+    if (retryError) throw new Error(`setSession failed for ${email}: ${retryError.message}`);
+  }
 }
 
 /** Wait for the create form's async duplicate check to finish (button re-enables). */
@@ -159,7 +190,9 @@ async function waitForLoaded(): Promise<void> {
 
 afterEach(async () => {
   cleanup();
-  await supabase.auth.signOut();
+  // Local-only: clears the client session without revoking the cached refresh
+  // token server-side (so signInAs can reuse it).
+  await supabase.auth.signOut({ scope: 'local' });
 });
 
 /** Delete the "UI …" prospects this file created (as admin). */
@@ -228,7 +261,16 @@ beforeAll(async () => {
     davidProspectName: davidProspect.data!.business_name as string,
     seededInstagram: amakaProspect.data!.instagram_handle as string,
   };
-  await admin.auth.signOut();
+  await admin.auth.signOut({ scope: 'local' });
+
+  // One password grant per account up-front; tests switch with setSession().
+  await Promise.all([
+    primeSession(EMAILS.admin),
+    primeSession(EMAILS.salesA),
+    primeSession(EMAILS.salesB),
+    primeSession(EMAILS.noStaff),
+    primeSession(EMAILS.deactivated),
+  ]);
 
   expect(F.amakaId, 'amaka staff id').toBeTruthy();
   expect(F.davidId, 'david staff id').toBeTruthy();

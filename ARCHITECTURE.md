@@ -1,8 +1,9 @@
 # Kiosk Sales CRM — Architecture (foundation build)
 
-Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 in progress** — funnel metrics
-+ leaderboard shipped (2026-09-02, migration `0005`). Remaining Phase 2:
-commissions, CSV export, follow-up reminders, payments UI, admin
+Status: **Phase 1 VERIFIED (2026-08-30). Phase 2 in progress.** Shipped:
+funnel metrics + leaderboard (2026-09-02, migration `0005`); payments management
+(2026-09-02, no migration — uses the existing `crm.payments` RLS). Remaining
+Phase 2: commissions, CSV export, follow-up reminders, admin
 salesperson-management.
 
 Verification (2026-08-30):
@@ -186,14 +187,15 @@ business rules in components.
 | Dashboard (pipeline counts, overview totals, today) | ✅ |
 | **Funnel conversion metrics** (spec §9) | ✅ Phase 2 — `src/modules/analytics/funnel-metrics.ts`, on the dashboard, RLS-scoped |
 | **Salesperson leaderboard** (spec §8) | ✅ Phase 2 — `crm.leaderboard()` RPC + `src/modules/analytics/leaderboard.ts`, `/leaderboard` |
+| **Payments management** (spec §10) | ✅ Phase 2 — `src/modules/payments/*`; admin records/updates payments on the prospect detail page |
 | Search + filters (status/source/category/salesperson/text) | ✅ |
 | Dev seed (~60 prospects, 5 accounts, activities, payments, follow-ups) | ✅ run on `kiosk-nonprod` |
 | Mobile-responsive layout | ✅ (sidebar → top nav, tables → cards) |
-| Tests | ✅ 101 unit + 61 integration (RLS/auth/dup + browser-UI + analytics) |
+| Tests | ✅ 113 unit + 65 integration (RLS/auth/dup + browser-UI + analytics + payments) |
 
 **Still not built** (later Phase 2/3): commissions, CSV export, follow-up
-reminder dashboard (due/overdue/upcoming), payments management UI, admin
-salesperson-management UI, audit-log viewer UI.
+reminder dashboard (due/overdue/upcoming), admin salesperson-management UI,
+audit-log viewer UI.
 
 ### 8a. Analytics (Phase 2)
 
@@ -211,6 +213,26 @@ salesperson-management UI, audit-log viewer UI.
   data**, so every rep can see the ranked board and their own position without
   read access to others' prospects (spec §8). Ranked by paid count, then
   revenue, then name; standard competition ranking (1, 2, 2, 4).
+
+### 8b. Payments (Phase 2)
+
+`src/modules/payments/*` — **no migration**: the `crm.payments` table + RLS
+(`payments_insert` / `payments_update` gated to `is_admin()`, no delete policy)
+already existed from Phase 1. V1 is manual entry by an admin from the prospect
+detail page.
+
+- `payment-money.ts` (pure + 6 tests) — naira ↔ integer **kobo**, round-half-up;
+  `parseNairaInput` strips `₦`/commas/spaces.
+- `payment-service.ts` (pure + 6 tests) — `buildPaymentRow` assembles the
+  `crm.payments` row; attribution defaults to the prospect's current owner
+  (stable id snapshot, spec §11), currency fixed `NGN`, status defaults `pending`.
+- `RecordPaymentForm` + `PaymentStatusControl` — admin-only; a rep sees the
+  payment list read-only. The `on_payment_insert` / `on_payment_update` DEFINER
+  triggers write the `payment_received` activity + `payment.created` /
+  `payment.updated` audit rows.
+- Recording a payment does **not** move the pipeline status — payment tracking
+  and the funnel stage are deliberately decoupled (spec §2 vs §10); the form
+  says so. `confirmed` payments flow into the funnel/leaderboard revenue.
 
 ## 9. Known limitations / decisions to confirm
 

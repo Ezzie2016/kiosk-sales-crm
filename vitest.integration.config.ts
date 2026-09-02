@@ -19,6 +19,8 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 60_000,
     fileParallelism: false,
-    retry: 0,
+    // These hit a live (non-prod) Supabase; a transient socket/rate-limit blip
+    // should not fail the run. A real logic bug fails both attempts.
+    retry: 1,
   },
 });

@@ -10,6 +10,8 @@ import { StatusControl } from './StatusControl';
 import { AssignControl } from './AssignControl';
 import { LogActivityControl } from './LogActivityControl';
 import { ActivityTimeline } from '@/modules/activities/ActivityTimeline';
+import { RecordPaymentForm } from '@/modules/payments/RecordPaymentForm';
+import { PaymentStatusControl } from '@/modules/payments/PaymentStatusControl';
 import { PipelineBar } from '@/components/PipelineBar';
 import { StampBadge } from '@/components/StampBadge';
 import { Currency } from '@/components/Currency';
@@ -18,13 +20,14 @@ import {
   canAssignProspect,
   canDeleteProspect,
   canEditProspect,
+  canManagePayments,
   canRecordActivity,
   canViewProspect,
 } from '@/modules/authorization/permissions';
 import { BUSINESS_CATEGORY_LABEL } from '@/constants/categories';
 import { PROSPECT_SOURCE_LABEL } from '@/constants/sources';
 import { formatDate, formatDateTime, relativeDay } from '@/lib/format';
-import { isRevenueCounting } from '@/constants/payments';
+import { isRevenueCounting, PAYMENT_STATUS_LABEL } from '@/constants/payments';
 
 export function ProspectDetailPage() {
   const { id = '' } = useParams();
@@ -49,6 +52,7 @@ export function ProspectDetailPage() {
   const mayEdit = actor ? canEditProspect(actor, prospectRef) : false;
   const mayAssign = actor ? canAssignProspect(actor) : false;
   const mayDelete = actor ? canDeleteProspect(actor) : false;
+  const mayManagePayments = actor ? canManagePayments(actor) : false;
   const confirmedRevenue = (payments ?? [])
     .filter((p) => isRevenueCounting(p.status))
     .reduce((sum, p) => sum + p.amount_kobo, 0);
@@ -122,12 +126,29 @@ export function ProspectDetailPage() {
             <span className="muted">Confirmed revenue</span>
             <Currency amountKobo={confirmedRevenue} />
           </div>
+
+          {(payments ?? []).length === 0 && <p className="muted" style={{ fontSize: '0.85rem' }}>No payments recorded.</p>}
           {(payments ?? []).map((p) => (
-            <div key={p.id} className="spread" style={{ fontSize: '0.85rem' }}>
-              <span className="muted">{p.plan} · {p.status} · {formatDate(p.paid_on)}</span>
-              <Currency amountKobo={p.amount_kobo} />
+            <div key={p.id} className="spread" style={{ fontSize: '0.85rem', marginTop: 4 }}>
+              <span className="muted">{p.plan} · {formatDate(p.paid_on)}</span>
+              <span className="row" style={{ gap: 8 }}>
+                <Currency amountKobo={p.amount_kobo} />
+                {mayManagePayments ? (
+                  <PaymentStatusControl prospectId={id} paymentId={p.id} status={p.status} />
+                ) : (
+                  <span className="muted">{PAYMENT_STATUS_LABEL[p.status]}</span>
+                )}
+              </span>
             </div>
           ))}
+
+          {mayManagePayments && (
+            <>
+              <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />
+              <h4 style={{ marginBottom: 8, fontSize: '0.9rem' }}>Record a payment</h4>
+              <RecordPaymentForm prospectId={id} prospectOwnerId={prospect.assigned_salesperson_id} />
+            </>
+          )}
         </div>
       </div>
 

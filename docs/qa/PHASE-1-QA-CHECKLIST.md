@@ -58,7 +58,7 @@ browser-UI, run repeatedly and rerun-safe).
 npm run test:integration
 ```
 
-`test:integration` runs three files:
+`test:integration` runs four files:
 
 - **`phase1.integration.test.ts`** (41) — five anon auth sessions (admin / sales
   A / sales B / no-staff / deactivated): lockouts, prospect ownership, assignment
@@ -72,15 +72,20 @@ npm run test:integration
   returns the aggregate to any active staff member (not just admins) and ranks
   Amaka ahead of David; anon / no-staff get nothing; the funnel is monotonic,
   matches the seed (60 total / 6 paid), and is RLS-scoped per rep.
+- **`phase2-payments.integration.test.ts`** (4) — Phase 2: a salesperson cannot
+  record or re-status a payment; an admin records one (kobo-correct, `NGN`,
+  attribution defaulted) which writes a `payment_received` activity +
+  `payment.created` audit; moving it `pending → confirmed` is audited and flows
+  into the attributed rep's leaderboard revenue.
 
-**Run status: ✅ PASS — 61/61 (2026-09-02).** Getting Phase 1 green surfaced and
-fixed three `crm`-schema bugs — see §12.
+**Run status: ✅ PASS — 65/65, run ×2 rerun-safe (2026-09-02).** Getting Phase 1
+green surfaced and fixed three `crm`-schema bugs — see §12.
 
-- [x] `npm run test:integration` passes with **0 failures** (61/61).
-- [x] Re-run — green. *Note:* the suite makes ~40 auth sign-ins across three
-      files serially; running it back-to-back several times can transiently trip
-      kiosk-nonprod rate limits (scattered failures / a socket timeout). Wait a
-      minute and re-run — it is deterministic otherwise.
+- [x] `npm run test:integration` passes with **0 failures** (65/65).
+- [x] Re-run — green. The `phase1-ui` harness now caches one password grant per
+      account and switches with `setSession()`; the integration config uses
+      `retry: 1`. Together those keep the four-file suite from tripping
+      kiosk-nonprod auth rate limits on back-to-back runs.
 
 ---
 
