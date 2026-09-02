@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/modules/auth/auth-context';
-import { RequireStaff } from '@/modules/auth/guards';
+import { RequireAdmin, RequireStaff } from '@/modules/auth/guards';
 import { LoginPage } from '@/modules/auth/LoginPage';
 import { AppLayout } from '@/components/AppLayout';
 import { DashboardPage } from '@/modules/dashboard/DashboardPage';
@@ -11,6 +11,7 @@ import { ProspectDetailPage } from '@/modules/prospects/ProspectDetailPage';
 import { ProspectEditPage } from '@/modules/prospects/ProspectEditPage';
 import { LeaderboardPage } from '@/modules/analytics/LeaderboardPage';
 import { FollowUpsPage } from '@/modules/followups/FollowUpsPage';
+import { AuditLogPage } from '@/modules/audit/AuditLogPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -28,6 +29,7 @@ function Protected() {
           <Route path="/prospects/:id/edit" element={<ProspectEditPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/follow-ups" element={<FollowUpsPage />} />
+          <Route path="/admin/audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppLayout>

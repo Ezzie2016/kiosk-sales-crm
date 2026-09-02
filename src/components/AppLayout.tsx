@@ -3,15 +3,17 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/use-auth';
 import { isProduction, env } from '@/lib/env';
 
-const NAV = [
+const BASE_NAV = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/prospects', label: 'Prospects', end: false },
   { to: '/follow-ups', label: 'Follow-ups', end: false },
   { to: '/leaderboard', label: 'Leaderboard', end: false },
 ];
+const ADMIN_NAV = [{ to: '/admin/audit', label: 'Audit', end: false }];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { staff, signOut } = useAuth();
+  const NAV = staff?.role === 'admin' ? [...BASE_NAV, ...ADMIN_NAV] : BASE_NAV;
 
   return (
     <div className="app-shell">
